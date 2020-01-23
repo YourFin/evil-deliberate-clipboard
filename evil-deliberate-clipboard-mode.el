@@ -3,7 +3,7 @@
 ;; emacs behave better.
 (require 'evil)
 
-(defvar evil-deliberate-clipboard/mode-line-name " heretic-clip"
+(defvar evil-deliberate-clipboard/mode-line-name " delib-clip"
   "The mode-line name for `evil-deliberate-clipboard-mode'.
 Should start with a space")
 (defvar evil-deliberate-clipboard/ignored-modes (list 'magit 'magit-diff-mode 'git-rebase-mode)
@@ -57,16 +57,6 @@ Alias for (`evil-define-key' (visual and normal)
                              `evil-deliberate-cilpboard-mode-map' KEY DEF)"
   (evil-define-minor-mode-key 'visual 'evil-deliberate-clipboard-mode key def)
   (evil-define-minor-mode-key 'normal 'evil-deliberate-clipboard-mode key def))
-
-(defun evil-deliberate-clipboard- ()
-  "Call `evil-paste-after' but invert `evil-kill-on-visual-paste'.
-By default, this replaces the selection with what's in the clipboard without
-replacing its contents.
-
-Idea ripped from doom emacs: https://github.com/hlissner/doom-emacs"
-  (interactive)
-  (let ((evil-kill-on-visual-paste (not evil-kill-on-visual-paste)))
-    (call-interactively #'evil-paste-after)))
 
 ;;; functions
 (evil-define-command evil-deliberate-clipboard-alt-paste-before
@@ -136,7 +126,7 @@ To further motivate usage of your new and improved `kill-ring',
 
 ;;;###autoload
 (define-globalized-minor-mode global-evil-deliberate-clipboard-mode
-  evil-deliberate-clipboard-mode  heretic-evil-clipboard-mode-on)
+  evil-deliberate-clipboard-mode evil-deliberate-clipboard-mode-on)
 
 ;;;###autoload
 (defun evil-deliberate-clipboard-mode-off ()
