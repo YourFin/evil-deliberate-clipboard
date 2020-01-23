@@ -14,6 +14,9 @@ Must be changed before `evil-deliberate-clipboard-mode.el' is loaded.")
 (defun evil-deliberate-clipboard/evil-delete-advice (proc &rest arg-passthrough)
   "Advice evil functions that kill as a non-primary directive"
   (cond
+   ((not evil-deliberate-clipboard-mode)
+    ;; If the mode isn't on, just pass through like nothing happened
+    (apply proc arg-passthrough))
    ((bound-and-true-p evil-mc-cursor-list)
     (let ((interprogram-cut-function nil))
       (apply proc arg-passthrough)))
@@ -75,22 +78,22 @@ Idea ripped from doom emacs: https://github.com/hlissner/doom-emacs"
       (let ((evil-kill-on-visual-paste (not evil-kill-on-visual-paste)))
         (call-interactively #'evil-paste-after register yank-handler))
     (evil-paste-before count register yank-handler)))
-(evil-deliberate-clipboard--bind "P" #'heretic-evil-clipboard-alt-paste-before)
+(evil-deliberate-clipboard--bind "P" #'evil-deliberate-clipboard-alt-paste-before)
 
-(evil-define-operator evil-deliberate-clipboard-m (beg end type register yank-handler)
+(evil-define-operator evil-deliberate-clipboard-cut (beg end type register yank-handler)
   "Evil-delete that sets custom clipboard along with standard kill"
   (interactive "<R><x><y>")
   (evil-deliberate-clipboard/without-evil-delete-advice
    #'evil-delete beg end type register yank-handler))
-(evil-deliberate-clipboard--bind "m" #'heretic-evil-clipboard-m)
+(evil-deliberate-clipboard--bind "m" #'evil-deliberate-clipboard-cut)
 
-(evil-define-operator evil-deliberate-clipboard-M (beg end type register yank-handler)
+(evil-define-operator evil-deliberate-clipboard-cut-eol (beg end type register yank-handler)
   "Evil-delete-line that sets custom clipboard along with standard kill"
   :motion evil-end-of-line
   (interactive "<R><x>")
   (evil-deliberate-clipboard/without-evil-delete-advice
    #'evil-delete-line beg end type register))
-(evil-deliberate-clipboard--bind "M" #'heretic-evil-clipboard-M)
+(evil-deliberate-clipboard--bind "M" #'evil-deliberate-clipboard-cut-eol)
 
 (hetetic-evil-clipboard--add-ignore-hooks)
 (define-minor-mode evil-deliberate-clipboard-mode
