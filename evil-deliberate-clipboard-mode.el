@@ -3,6 +3,15 @@
 ;; emacs behave better.
 (require 'evil)
 
+;;; Code:
+
+(defvar-local evil-deliberate-clipboard//evil-del-advice-enabled t
+  "Internal use only.
+Buffer local variable that is set by
+`evil-deliberate-clipboard-mode/without-evil-delete-advice'
+to determine whether or not to load kills into the system
+clipboard and first space in the kill ring.")
+
 (defvar evil-deliberate-clipboard/mode-line-name " delib-clip"
   "The mode-line name for `evil-deliberate-clipboard-mode'.
 Should start with a space")
@@ -12,38 +21,46 @@ Must be changed before `evil-deliberate-clipboard-mode.el' is loaded.")
 
 ;; This advice does most of the heavy lifting for evil-deliberate-clipboard-mode.
 (defun evil-deliberate-clipboard/evil-delete-advice (proc &rest arg-passthrough)
-  "Advice evil functions that kill as a non-primary directive"
+  "Advise evil functions that kill as a non-primary directive.
+When `evil-deliberate-clipboard-mode' is on, this advice prevents
+`kill-new' from accessing the system clipboard, and has it set the second
+item in the `kill-ring' instead of the first. In the case that the
+`kill-ring' is empty,"
   (cond
-   ((not evil-deliberate-clipboard-mode)
-    ;; If the mode isn't on, just pass through like nothing happened
+   ((or (not evil-deliberate-clipboard-mode) (not evil-deliberate-clipboard//evil-del-advice-enabled))
+    ;; If the mode isn't on, or we should kill to the clipboard, just pass
+    ;; through like nothing happened.
     (apply proc arg-passthrough))
    ((bound-and-true-p evil-mc-cursor-list)
-    (let ((interprogram-cut-function nil))
+    (let ((select-enable-clipboard nil))
       (apply proc arg-passthrough)))
    (kill-ring ;; Kill ring has something in it
-    (let ((real-kill-ring kill-ring)
-          (kill-ring (cdr kill-ring))
-          (interprogram-cut-function nil))
-      (apply proc arg-passthrough)
-      (setcdr real-kill-ring kill-ring)
-      (setq kill-ring-yank-pointer real-kill-ring)))
+    (let ((original-kill-ring kill-ring)
+          (kill-ring (cdr kill-ring)) ;; Set "system kill ring"
+          (select-enable-clipboard nil))
+      (unwind-protect
+          (apply proc arg-passthrough)
+        (setcdr original-kill-ring kill-ring)
+        (setq kill-ring-yank-pointer original-kill-ring))))
    ;;Handle empty kill advice
    (t
-    (let ((interprogram-cut-function nil))
+    (let ((select-enable-clipboard nil))
       (apply proc arg-passthrough)))))
+(advice-add 'evil-delete :around #'evil-deliberate-clipboard/evil-delete-advice)
 
 (defun evil-deliberate-clipboard/without-evil-delete-advice (proc &rest args)
   "Call PROC with ARGS and `evil-deliberate-clipboard/evil-delete-advice' disabled."
   (if (not evil-deliberate-clipboard-mode)
       (apply proc args)
-    (advice-remove 'evil-delete #'evil-deliberate-clipboard/evil-delete-advice)
+    (setq evil-deliberate-clipboard//evil-del-advice-enabled nil)
     (unwind-protect
         (apply proc args)
-      (advice-add 'evil-delete :around #'evil-deliberate-clipboard/evil-delete-advice))))
+      (setq evil-deliberate-clipboard//evil-del-advice-enabled t))))
 
 (defun hetetic-evil-clipboard--add-ignore-hooks ()
   "Internal use: adds hooks for the modes that are ignored
-by `evil-deliberate-clipboard-mode' as defined in `heretic-evil-clipboard/ignored-modes'"
+by `evil-deliberate-clipboard-mode' as defined in
+`evil-deliberate-clipboard/ignored-modes'"
   (mapcar
    (lambda (mode)
      (let ((mode-hook
@@ -111,14 +128,7 @@ To further motivate usage of your new and improved `kill-ring',
   :lighter evil-deliberate-clipboard/mode-line-name
   :keymap (make-sparse-keymap)
   ;; Keymap switching handled by evil mode
-  :global nil
-  ;;(hetetic-evil-clipboard--add-ignore-hooks)
-  (if evil-deliberate-clipboard-mode
-      (progn
-        (advice-add 'evil-visual-paste :around #'evil-deliberate-clipboard/without-evil-delete-advice)
-        (advice-add 'evil-delete :around #'evil-deliberate-clipboard/evil-delete-advice))
-    (advice-remove 'evil-visual-paste #'evil-deliberate-clipboard/without-evil-delete-advice)
-    (advice-remove 'evil-delete #'evil-deliberate-clipboard/evil-delete-advice)))
+  :global nil)
 
 ;;;###autoload
 (defun evil-deliberate-clipboard-mode-on ()
@@ -164,7 +174,7 @@ To further motivate usage of your new and improved `kill-ring',
 ;;                         (read-string "Separator: ")
 ;;                       helm-kill-ring-separator))
 ;;                kill-ring
-;;                interprogram-cut-function
+;;                select-enable-clipboard
 ;;                interprogram-paste-function)
 ;;            ;; Mask off the old kill ring, and don't
 ;;            ;; paste anywhere
