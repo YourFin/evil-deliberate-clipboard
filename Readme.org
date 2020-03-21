@@ -1,0 +1,17 @@
+#+TITLE: Evil deliberate cliboard mode
+
+*Note:* This package requires Emacs *25* or later
+
+* Recommendations:
+The following line:
+#+BEGIN_SRC elisp
+(setq-default save-interprogram-paste-before-kill t)
+#+END_SRC
+Has emacs hold on to clipboard contents in the kill ring before things get sent
+to the system clipboard. It is *highly* recommended to set this with
+evil-deliberate-clipboard-mode, and not doing so may lead to unexpected, if
+"correct", behaviour.
+
+This package is built with the system clipboard in mind, i.e.
+~select-enable-clipboard~ is not ~nil~ (this is the default behavior). It will
+still function without the system clipboard, though.
