@@ -1,6 +1,8 @@
 #+TITLE: Evil deliberate cliboard mode
 
-*Note:* This package requires Emacs *25* or later
+*Note:* This package requires Emacs *25* or later. Supporting earlier versions
+should be pretty easy, so if you want to use this package with an older version
+of emacs please file an issue.
 
 * Recommendations:
 The following line:
